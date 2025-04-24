@@ -9,7 +9,6 @@ import sys
 import time
 import requests
 
-
 ####
 # Configuration
 ####
@@ -61,7 +60,6 @@ args = parser.parse_args()
 # Library Methods
 ####
 
-
 def signal_handler(_signal_received, _frame):
     """ Control-C """
     print("\nExiting")
@@ -85,17 +83,13 @@ def request_wiz_api_token():
             token = response_json.get('access_token')
             if not token:
                 response_message = response_json.get('message')
-                # pylint:disable=broad-exception-raised
                 raise Exception(f'Error retrieving token from the Wiz API: {response_message}')
             HEADERS['Authorization'] = f'Bearer {token}'
         except ValueError as exception:
-            # pylint:disable=broad-exception-raised,raise-missing-from
             raise Exception(f'Error parsing Wiz API response: {exception}')
     else:
         if retryable_response_status_code(response.status_code):
-            # pylint:disable=broad-exception-raised,line-too-long
             raise Exception(f'Error (retryable) authenticating to the Wiz API: {response.status_code}')
-        # pylint:disable=broad-exception-raised
         raise Exception(f'Error authenticating to the Wiz API: {response.status_code} - {response}')
     return token
 
@@ -115,7 +109,6 @@ def query_wiz_api(api_query, api_query_variables):
             try:
                 page_result = response.json()
             except ValueError as exception:
-                # pylint:disable=broad-exception-raised,raise-missing-from
                 raise Exception(f'Error parsing Wiz API response: {exception}')
         while retryable_response_status_code(response.status_code):
             for exponential_wait in exponential_waits:
@@ -125,12 +118,10 @@ def query_wiz_api(api_query, api_query_variables):
                     try:
                         page_result = response.json()
                     except ValueError as exception:
-                       # pylint:disable=broad-exception-raised,raise-missing-from
                         raise Exception(f'Error parsing Wiz API response: {exception}')
         if not response.ok:
-            # pylint:disable=broad-exception-raised,raise-missing-from
             raise Exception(f'Error querying Wiz API: {response.status_code} - {response}')
-        if page_result['data']:
+        if 'data' in page_result and page_result['data']:
             query_key = list(page_result['data'].keys())[0]
             if query_result:
                 query_result['data'][query_key]['nodes'].extend(page_result['data'][query_key]['nodes'])
@@ -141,8 +132,8 @@ def query_wiz_api(api_query, api_query_variables):
                 api_query_variables['after'] = page_info['endCursor']
             else:
                 page_info = {'hasNextPage': False}
-        elif page_result['errors']:
-            print(f'Error: GraphQL Return Message: {page_result["errors"][0]["message"]}')
+        elif 'errors' in page_result:
+            print(f'GraphQL Error Response:\n{page_result}')
             page_info = {'hasNextPage': False}
         else:
             print('Error: Unknown GraphQL Return Message')
