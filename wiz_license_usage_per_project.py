@@ -304,41 +304,119 @@ project_query_variables = {
 # GraphQL query to execute.
 
 license_query = """
-query WorkloadLicensesUsage(
-    $startDate: DateTime!
-    $endDate: DateTime!
-    $maxResults: Int
-    $project: [String!]
+query WorkloadLicenseUsage($startAt: DateTime!, $endAt: DateTime!, $includeRegistryContainerImageScanCount: Boolean!, $includeComputeScanCount: Boolean!, $project: [String!], $license: ID!) {
+  billableWorkloadTrendV2(
+    startDate: $startAt
+    endDate: $endAt
+    project: $project
+    license: $license
   ) {
-    billableWorkloadTrend(
-      startDate: $startDate
-      endDate: $endDate
-      maxResults: $maxResults
-      project: $project
-    ) {
+    totalWorkloadCount
+    licensedWorkloadQuota
+    ... on SensorBillableWorkloadTrendData {
+      averageKubernetesSensorCount
+      averageVMSensorCount
+      averageServerlessContainerSensorCount
+      averageSensorWorkloadCount
+      averageWorkloadScanningKubernetesSensorCount
+      averageWorkloadScanningVirtualMachineSensorCount
+      averageWorkloadScanningSensorWorkloadCount
+      averageKubernetesSensorsWithRuntimeEventsCount
+      averageVmSensorsWithRuntimeEventsCount
+      averageServerlessContainerSensorsWithRuntimeEventsCount
+      averageSensorWorkloadWithRuntimeEventsCount
+    }
+    ... on CodeBillableWorkloadTrendData {
+      totalActiveUsersWorkloadCount
+    }
+    ... on XMBillableWorkloadTrendData {
+      totalWorkloadCount
+      licensedWorkloadQuota
+      averageHttpApplicationEndpointCount
+      averageNonHttpApplicationEndpointCount
+      averageAttackSurfaceManagementWorkloadCount
+      averageApiApplicationEndpointCount
+    }
+    ... on DefendBillableWorkloadTrendData {
+      averageVirtualMachineCount
+      averageContainerHostsCount
+      averageServerlessCount
+      averageBucketCount
+      averageDefendAssetWorkloadCount
+      averagePaasDatabaseCount
+      averageDataWarehouseCount
+      extraIngestionWorkloads
+      logsCap
+      accumulatedExtraIngestedLogsCount
+    }
+    ... on DefendV2BillableWorkloadTrendData {
+      totalWorkloadCount
+      licensedWorkloadQuota
+      totalAccumulatedIngestedBytes
+      totalIngestionWorkloadCount
+      freeTierWorkloadQuota
+      freeTierWorkloadCount
+      accumulatedManagementLogsIngestedBytes
+      accumulatedManagementLogsWorkloadCount
+      accumulatedDataLogsIngestedBytes
+      accumulatedDataLogsWorkloadCount
+      accumulatedNetworkLogsIngestedBytes
+      accumulatedNetworkLogsWorkloadCount
+      accumulatedIdentityLogsIngestedBytes
+      accumulatedIdentityLogsWorkloadCount
+      accumulatedVCSLogsIngestedBytes
+      accumulatedVCSLogsWorkloadCount
+    }
+    ... on CloudBillableWorkloadTrendData {
+      averageComputeWorkloadCount
       averageVirtualMachineCount
       averageContainerHostCount
       averageServerlessCount
       averageServerlessContainerCount
-      accumulatedSensorCount
-      averageRegistryContainerImageScanCount
-      accumulatedBucketScanCount
-      accumulatedIaasDatabaseScannedGB
-      accumulatedPaasDatabaseScannedGB
-      accumulatedNonOSDiskScansCount
+      averageAssetsMetadataCount
       totalWorkloadCount
+      accumulatedBucketScanCount
+      monthlyAverageBucketScanCount
+      accumulatedNonOSDiskScansCount
+      monthlyAverageNonOSDiskScansCount
+      monthlyAverageNonOSDiskWorkloadCount
+      accumulatedPaasDatabaseScanCount
+      monthlyAveragePaasDatabaseScanCount
+      accumulatedDataWarehouseScanCount
+      monthlyAverageNonOSContainerHostScanCount
+      accumulatedNonOSContainerHostScanCount
+      monthlyAverageDataWarehouseScanCount
+      monthlyAverageDSPMWorkloadCount
+      accumulatedRegistryContainerImageScanCount @include(if: $includeRegistryContainerImageScanCount)
+      monthlyAverageRegistryContainerImageScanCount @include(if: $includeRegistryContainerImageScanCount)
+      accumulatedRegistryContainerImageWorkloadCount @include(if: $includeRegistryContainerImageScanCount)
+      monthlyAverageRegistryContainerImageWorkloadCount @include(if: $includeRegistryContainerImageScanCount)
+      monthlyAverageVirtualMachineImageScanCount
+      monthlyAverageVirtualMachineImageWorkloadCount
+      accumulatedVirtualMachineImageScanCount
+      monthlyAverageComputeScansWorkloadCount @include(if: $includeComputeScanCount)
+      accumulatedContainerHostScanCount @include(if: $includeComputeScanCount)
+      accumulatedServerlessScanCount @include(if: $includeComputeScanCount)
+      accumulatedContainerImageScanCount @include(if: $includeComputeScanCount)
+      accumulatedVirtualMachineDiskScanCount @include(if: $includeComputeScanCount)
+      monthlyAverageServerlessScanCount @include(if: $includeComputeScanCount)
+      monthlyAverageContainerImageScanCount @include(if: $includeComputeScanCount)
+      monthlyAverageContainerHostScanCount @include(if: $includeComputeScanCount)
+      monthlyAverageVirtualMachineDiskScanCount @include(if: $includeComputeScanCount)
     }
   }
+}
 """
 
 # Variables for the GraphQL query to execute.
 
 license_query_variables = {
-    'startDate':            "",
-    'endDate':              "",
-    "maxResults":         100,
-    "includeSensorCount": True,
-    "project":            []
+    'includeRegistryContainerImageScanCount': True,
+    'includeComputeScanCount': False,
+    'startAt':          "",
+    'endAt':            "",
+    'project':            [],
+    "license":            "865082ef-cc8c-4062-9c67-d3e62699da44"
 }
 
 
@@ -414,8 +492,8 @@ def main():
     logging.info('Getting Wiz License Usage for the last %s days ...', args.days_ago)
 
     query_dates = get_query_dates()
-    license_query_variables['startDate'] = query_dates['startDate']
-    license_query_variables['endDate']   = query_dates['endDate']
+    license_query_variables['startAt'] = query_dates['startDate']
+    license_query_variables['endAt']   = query_dates['endDate']
     output_file_name = f"{args.csv_output_file}_{query_dates['endDate'].split('.')[0]}.csv".replace(':','-')
     input_project_names = []
     csv_output = []
@@ -474,7 +552,8 @@ def main():
             continue
         license_query_variables['project'] = [project['id']]
         billable_workloads = query_wiz_api(license_query,
-                                           license_query_variables)['data']['billableWorkloadTrend']
+                                           license_query_variables)['data']['billableWorkloadTrendV2']
+        print(billable_workloads)
         if args.use_billing_codes:
             billing_code = get_billing_code_from_project_identifiers(project)
         else:
@@ -489,11 +568,9 @@ def main():
             billable_workloads['averageContainerHostCount'],
             billable_workloads['averageServerlessCount'],
             billable_workloads['averageServerlessContainerCount'],
-            billable_workloads['accumulatedSensorCount'],
-            billable_workloads['averageRegistryContainerImageScanCount'],
+            billable_workloads['accumulatedRegistryContainerImageScanCount'],
             billable_workloads['accumulatedBucketScanCount'],
-            billable_workloads['accumulatedIaasDatabaseScannedGB'],
-            billable_workloads['accumulatedPaasDatabaseScannedGB'],
+            billable_workloads['accumulatedPaasDatabaseScanCount'],
             billable_workloads['accumulatedNonOSDiskScansCount'],
             billable_workloads['totalWorkloadCount'],
             query_dates['startDate'].split('.')[0],
