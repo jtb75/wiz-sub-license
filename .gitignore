@@ -1,3 +1,5 @@
 .vscode
 env
 venv
+.env
+.claude
