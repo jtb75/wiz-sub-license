@@ -68,8 +68,8 @@ PROXIES = {}
 # Wiz Service Account credentials
 # These should be set in environment variables or .env file for security
 # Create a service account in Wiz with "project:read" and "license:read" permissions
-CLIENT_ID = os.environ.get('ACCESS_KEY', '')
-CLIENT_SECRET = os.environ.get('ACCESS_SCECRET', '')  # Note: typo preserved for compatibility with existing env vars
+CLIENT_ID = os.environ.get('WIZ_CLIENT_ID', '')
+CLIENT_SECRET = os.environ.get('WIZ_CLIENT_SECRET', '')
 
 # Default file paths for input/output
 DEFAULT_CSV_INPUT_FILE = 'input_project_names.csv'  # Optional file containing project names to filter
