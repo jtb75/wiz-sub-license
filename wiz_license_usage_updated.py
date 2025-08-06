@@ -33,7 +33,6 @@ from io import StringIO
 
 import requests
 import jwt
-from dotenv import load_dotenv
 
 # AWS and Azure imports for cloud storage
 # These are optional - the script will work without them if not using cloud storage
@@ -50,9 +49,8 @@ try:
 except ImportError:
     HAS_AZURE = False
 
-# Load environment variables from .env file if present
-# This allows for local development without setting system environment variables
-load_dotenv()
+# Environment variables are expected to be set in the pipeline
+# Required variables: WIZ_CLIENT_ID, WIZ_CLIENT_SECRET
 
 ####
 # Global Variables and Configuration
@@ -66,7 +64,7 @@ HEADERS = {'Content-Type': 'application/json'}
 PROXIES = {}
 
 # Wiz Service Account credentials
-# These should be set in environment variables or .env file for security
+# These should be set in environment variables for security
 # Create a service account in Wiz with "project:read" and "license:read" permissions
 CLIENT_ID = os.environ.get('WIZ_CLIENT_ID', '')
 CLIENT_SECRET = os.environ.get('WIZ_CLIENT_SECRET', '')
@@ -652,8 +650,8 @@ def main():
     
     # Validate that we have credentials to authenticate
     if not CLIENT_ID or not CLIENT_SECRET:
-        logging.error('ERROR: Missing ACCESS_KEY or ACCESS_SCECRET in environment variables or .env file')
-        logging.error('Please set these in your environment or create a .env file')
+        logging.error('ERROR: Missing WIZ_CLIENT_ID or WIZ_CLIENT_SECRET in environment variables')
+        logging.error('Please set these in your pipeline environment')
         logging.error('You can create a service account in Wiz with project:read and license:read permissions')
         sys.exit(1)
     

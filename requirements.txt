@@ -14,6 +14,7 @@ isodate==0.6.1
 jmespath==1.0.1
 pycparser==2.21
 python-dateutil==2.8.2
+pyjwt==2.8.0
 pyopenssl==23.3.0
 requests==2.32.4
 s3transfer==0.7.0
